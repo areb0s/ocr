@@ -12,19 +12,26 @@ export class Detection extends ModelBase {
     invariant(detectionPath, 'detectionPath is required')
     const mergedOptions = {
       executionProviders: ['webgpu', 'webgl', 'wasm'],
+      graphOptimizationLevel: 'all' as const,
+      enableCpuMemArena: true,
+      enableMemPattern: true,
       ...onnxOptions,
     }
     const model = await InferenceSession.create(detectionPath, mergedOptions)
     return new Detection({ model, options: restOptions })
   }
 
-  async run(input: string | ImageRawData | BrowserImageInput, { onnxOptions = {} }: { onnxOptions?: InferenceSessionCommon.RunOptions } = {}) {
+  async run(
+    input: string | ImageRawData | BrowserImageInput,
+    { onnxOptions = {} }: { onnxOptions?: InferenceSessionCommon.RunOptions } = {},
+  ) {
     // Use ImageRaw.from() factory method if available (browser), otherwise fallback to legacy handling
-    const image = typeof (ImageRaw as any).from === 'function'
-      ? await (ImageRaw as any).from(input)
-      : typeof input === "string" 
-        ? await ImageRaw.open(input) 
-        : new ImageRaw(input as ImageRawData)
+    const image =
+      typeof (ImageRaw as any).from === 'function'
+        ? await (ImageRaw as any).from(input)
+        : typeof input === 'string'
+          ? await ImageRaw.open(input)
+          : new ImageRaw(input as ImageRawData)
 
     // Resize image to multiple of 32
     //   - image width and height must be a multiple of 32

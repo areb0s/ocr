@@ -7,10 +7,18 @@ type pointType = [number, number]
 type BoxType = [pointType, pointType, pointType, pointType]
 type pointsType = pointType[]
 
+// Helper function moved outside loop for performance
+function clip(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(n, max))
+}
+
 export async function splitIntoLineImages(image: ImageRawType, sourceImage: ImageRawType): Promise<LineImage[]> {
   const w = image.width
   const h = image.height
   const srcData = sourceImage
+  const rx = srcData.width / w
+  const ry = srcData.height / h
+  const minSize = 3
 
   const edgeRect: { box: BoxType; image: ImageRawType }[] = []
 
@@ -23,31 +31,24 @@ export async function splitIntoLineImages(image: ImageRawType, sourceImage: Imag
   cv.findContours(src, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
 
   for (let i = 0; i < contours.size(); i++) {
-    const minSize = 3
     const cnt = contours.get(i)
     const { points, sside } = getMiniBoxes(cnt)
     if (sside < minSize) continue
-    // TODO sort fast
 
     const clipBox = unclip(points)
 
     const boxMap = cv.matFromArray(clipBox.length / 2, 1, cv.CV_32SC2, clipBox)
-
     const resultObj = getMiniBoxes(boxMap)
+    boxMap.delete() // Memory optimization: delete immediately after use
+
     const box = resultObj.points
     if (resultObj.sside < minSize + 2) {
       continue
     }
-    function clip(n: number, min: number, max: number) {
-      return Math.max(min, Math.min(n, max))
-    }
 
-    const rx = srcData.width / w
-    const ry = srcData.height / h
-
-    for (let i = 0; i < box.length; i++) {
-      box[i][0] *= rx
-      box[i][1] *= ry
+    for (let j = 0; j < box.length; j++) {
+      box[j][0] *= rx
+      box[j][1] *= ry
     }
 
     const box1 = orderPointsClockwise(box)
@@ -171,29 +172,36 @@ function getRotateCropImage(imageRaw: ImageRawType, points: BoxType): ImageRawTy
   const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, flatten(points))
   const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, flatten(pts_std))
 
-  // 获取到目标矩阵
+  // Get perspective transform matrix
   const M = cv.getPerspectiveTransform(srcTri, dstTri)
   const src = cvImread(imageRaw)
   const dst = new cv.Mat()
   const dsize = new cv.Size(img_crop_width, img_crop_height)
-  // 透视转换
+  // Apply perspective transform
   cv.warpPerspective(src, dst, M, dsize, cv.INTER_CUBIC, cv.BORDER_REPLICATE, new cv.Scalar())
 
   const dst_img_height = (<any>dst).matSize[0]
   const dst_img_width = (<any>dst).matSize[1]
-  let dst_rot
-  // 图像旋转
+  let dst_rot: cv.Mat | undefined
+  let M_rot: cv.Mat | undefined
+
+  // Rotate image if needed
   if (dst_img_height / dst_img_width >= 1.5) {
     dst_rot = new cv.Mat()
     const dsize_rot = new cv.Size(dst.rows, dst.cols)
     const center = new cv.Point(dst.cols / 2, dst.cols / 2)
-    const M = cv.getRotationMatrix2D(center, 90, 1)
-    cv.warpAffine(dst, dst_rot, M, dsize_rot, cv.INTER_CUBIC, cv.BORDER_REPLICATE, new cv.Scalar())
+    M_rot = cv.getRotationMatrix2D(center, 90, 1)
+    cv.warpAffine(dst, dst_rot, M_rot, dsize_rot, cv.INTER_CUBIC, cv.BORDER_REPLICATE, new cv.Scalar())
   }
 
+  // Memory optimization: delete all Mat objects
   src.delete()
   srcTri.delete()
   dstTri.delete()
+  M.delete()
+  if (M_rot) {
+    M_rot.delete()
+  }
   if (dst_rot) {
     dst.delete()
   }
@@ -292,5 +300,8 @@ function cvImread(image: ImageRawType) {
 }
 
 function cvImshow(mat: cv.Mat): ImageRawType {
-  return new ImageRaw({ data: mat.data, width: mat.cols, height: mat.rows })
+  // Create ImageRaw first (copies data internally), then delete mat
+  const result = new ImageRaw({ data: mat.data, width: mat.cols, height: mat.rows })
+  mat.delete() // Memory optimization: delete after data is copied
+  return result
 }

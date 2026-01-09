@@ -14,6 +14,9 @@ export class Recognition extends ModelBase {
     invariant(dictionaryPath, 'dictionaryPath is required')
     const mergedOptions = {
       executionProviders: ['webgpu', 'webgl', 'wasm'],
+      graphOptimizationLevel: 'all' as const,
+      enableCpuMemArena: true,
+      enableMemPattern: true,
       ...onnxOptions,
     }
     const model = await InferenceSession.create(recognitionPath, mergedOptions)
@@ -49,17 +52,14 @@ export class Recognition extends ModelBase {
       }),
     )
 
-    // Optimized: run all model inferences in parallel
+    // Note: ONNX Runtime does not support concurrent run() calls on the same session
+    // Must run sequentially to avoid "Session already started" error
     // console.time('Recognition')
-    const outputs = await Promise.all(
-      modelDatas.map((modelData) => this.runModel({ modelData, onnxOptions }))
-    )
-    
-    // Decode all outputs (maintains order)
     const allLines: Line[] = []
-    for (let i = outputs.length - 1; i >= 0; i--) {
-      const lines = this.decodeText(outputs[i])
-      allLines.push(...lines)
+    for (const modelData of modelDatas) {
+      const output = await this.runModel({ modelData, onnxOptions })
+      const lines = this.decodeText(output)
+      allLines.unshift(...lines)
     }
     // console.timeEnd('Recognition')
     const result = calculateBox({ lines: allLines, lineImages })
