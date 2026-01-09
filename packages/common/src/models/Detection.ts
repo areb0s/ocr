@@ -10,7 +10,11 @@ export class Detection extends ModelBase {
   static async create({ models, onnxOptions = {}, ...restOptions }: ModelCreateOptions) {
     const detectionPath = models?.detectionPath || defaultModels?.detectionPath
     invariant(detectionPath, 'detectionPath is required')
-    const model = await InferenceSession.create(detectionPath, onnxOptions)
+    const mergedOptions = {
+      executionProviders: ['webgpu', 'webgl', 'wasm'],
+      ...onnxOptions,
+    }
+    const model = await InferenceSession.create(detectionPath, mergedOptions)
     return new Detection({ model, options: restOptions })
   }
 

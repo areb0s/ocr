@@ -31,7 +31,7 @@ export type BrowserImageInput =
   | HTMLVideoElement // <video> element (captures current frame)
 
 export type ModelData = {
-  data: number[] | Uint8Array
+  data: number[] | Uint8Array | Float32Array
   width: number
   height: number
 }

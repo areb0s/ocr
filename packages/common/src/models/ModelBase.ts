@@ -34,20 +34,29 @@ export class ModelBase {
   }
 
   #prepareInput(modelData: ModelData) {
-    const input = Float32Array.from(modelData.data)
+    // Optimized: avoid copy if already Float32Array
+    const input = modelData.data instanceof Float32Array 
+      ? modelData.data 
+      : Float32Array.from(modelData.data)
     return new Tensor('float32', input, [1, 3, modelData.height, modelData.width])
   }
 
   imageToInput(image: ImageRaw, { mean = [0, 0, 0], std = [1, 1, 1] }: ReshapeOptions): ModelData {
-    const R: number[] = []
-    const G: number[] = []
-    const B: number[] = []
-    for (let i = 0; i < image.data.length; i += 4) {
-      R.push((image.data[i] / 255 - mean[0]) / std[0])
-      G.push((image.data[i + 1] / 255 - mean[1]) / std[1])
-      B.push((image.data[i + 2] / 255 - mean[2]) / std[2])
+    const pixelCount = image.data.length / 4
+    // Optimized: use Float32Array directly instead of intermediate arrays
+    const newData = new Float32Array(pixelCount * 3)
+    
+    // BGR order (model expects BGR)
+    const bOffset = 0
+    const gOffset = pixelCount
+    const rOffset = pixelCount * 2
+    
+    for (let i = 0, p = 0; i < image.data.length; i += 4, p++) {
+      newData[rOffset + p] = (image.data[i] / 255 - mean[0]) / std[0]      // R
+      newData[gOffset + p] = (image.data[i + 1] / 255 - mean[1]) / std[1]  // G
+      newData[bOffset + p] = (image.data[i + 2] / 255 - mean[2]) / std[2]  // B
     }
-    const newData = [...B, ...G, ...R]
+    
     return {
       data: newData,
       width: image.width,

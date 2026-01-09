@@ -12,7 +12,11 @@ export class Recognition extends ModelBase {
     invariant(recognitionPath, 'recognitionPath is required')
     const dictionaryPath = models?.dictionaryPath || defaultModels?.dictionaryPath
     invariant(dictionaryPath, 'dictionaryPath is required')
-    const model = await InferenceSession.create(recognitionPath, onnxOptions)
+    const mergedOptions = {
+      executionProviders: ['webgpu', 'webgl', 'wasm'],
+      ...onnxOptions,
+    }
+    const model = await InferenceSession.create(recognitionPath, mergedOptions)
     const dictionaryText = await FileUtils.read(dictionaryPath)
     const dictionary = [...dictionaryText.split('\n'), ' ']
     return new Recognition({ model, options: restOptions }, dictionary)
@@ -45,14 +49,17 @@ export class Recognition extends ModelBase {
       }),
     )
 
-    const allLines: Line[] = []
+    // Optimized: run all model inferences in parallel
     // console.time('Recognition')
-    for (const modelData of modelDatas) {
-      // Run model for each line image
-      const output = await this.runModel({ modelData, onnxOptions })
-      // use Dictoinary to decode output to text
-      const lines = await this.decodeText(output)
-      allLines.unshift(...lines)
+    const outputs = await Promise.all(
+      modelDatas.map((modelData) => this.runModel({ modelData, onnxOptions }))
+    )
+    
+    // Decode all outputs (maintains order)
+    const allLines: Line[] = []
+    for (let i = outputs.length - 1; i >= 0; i--) {
+      const lines = this.decodeText(outputs[i])
+      allLines.push(...lines)
     }
     // console.timeEnd('Recognition')
     const result = calculateBox({ lines: allLines, lineImages })
