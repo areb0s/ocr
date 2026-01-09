@@ -1,13 +1,13 @@
 {
-  "name": "@gutenye/ocr-browser",
-  "version": "1.4.8",
-  "description": "Guten OCR is a high accurate text detection (OCR) Javascript/Typescript library that runs on Node.js, Browser, React Native and C++. Based on PaddleOCR and ONNX runtime",
-  "keywords": ["ocr", "paddleocr", "typescript", "onnxruntime", "web", "browser"],
+  "name": "@areb0s/ocr-browser",
+  "version": "1.0.0",
+  "description": "Fork of @gutenye/ocr-browser with ImageBitmap support. High accurate OCR library for Browser based on PaddleOCR and ONNX runtime. Accepts ImageBitmap, HTMLImageElement, HTMLCanvasElement, HTMLVideoElement as input.",
+  "keywords": ["ocr", "paddleocr", "typescript", "onnxruntime", "web", "browser", "imagebitmap"],
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gutenye/ocr.git",
+    "url": "https://github.com/areb0s/ocr.git",
     "directory": "packages/browser"
   },
   "exports": {
@@ -22,7 +22,7 @@
     "postpublish": "rm README.md && rm -rf build"
   },
   "dependencies": {
-    "@gutenye/ocr-common": "^1.2.0",
+    "@areb0s/ocr-common": "workspace:*",
     "@gutenye/ocr-models": "^1.2.2",
     "onnxruntime-web": "^1.17.3"
   }

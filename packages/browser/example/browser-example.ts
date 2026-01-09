@@ -1,5 +1,5 @@
-import Ocr, { ImageRaw } from '@gutenye/ocr-browser'
-import type { BrowserImageInput } from '@gutenye/ocr-browser'
+import Ocr, { ImageRaw } from '@areb0s/ocr-browser'
+import type { BrowserImageInput } from '@areb0s/ocr-browser'
 
 async function main() {
   const ocr = await Ocr.create({
