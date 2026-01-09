@@ -1,7 +1,7 @@
 {
   "name": "@areb0s/ocr-common",
   "description": "Fork of @gutenye/ocr-common with ImageBitmap support. Shared OCR library for Browser/Node based on PaddleOCR and ONNX runtime.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -21,7 +21,12 @@
       "default": "./build/backend/splitIntoLineImages.js"
     }
   },
-  "files": ["src", "build", "tsconfig.json", "!**/__tests__"],
+  "files": [
+    "src",
+    "build",
+    "tsconfig.json",
+    "!**/__tests__"
+  ],
   "scripts": {
     "build": "npx tsc --project tsconfig.build.json && npx tsc-alias --project tsconfig.build.json",
     "prepublishOnly": "npm run build"
