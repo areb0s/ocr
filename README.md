@@ -1,31 +1,29 @@
-# Guten OCR
+# @areb0s/ocr
 
-> [Demo](https://gutenye-ocr.netlify.app/) | [Roadmap](https://github.com/users/gutenye/projects/5/views/4)
+> Fork of [@gutenye/ocr](https://github.com/gutenye/ocr) with **ImageBitmap support**
 
-**an OCR Javascript library runs on Node.js, Browser, React Native and C++** 
+**OCR Javascript library for Browser with extended image input support**
 
 Based on [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) and [ONNX Runtime](https://github.com/microsoft/onnxruntime), supports PP-OCRv4 model
 
+## What's New in This Fork
+
+- **ImageBitmap support**: Pass `ImageBitmap` directly to `ocr.detect()`
+- **HTMLImageElement support**: Pass `<img>` elements directly
+- **HTMLCanvasElement support**: Pass `<canvas>` elements directly
+- **HTMLVideoElement support**: Capture current frame from `<video>` elements
+
 ## Getting Started
-
-### Node
-
-> [Example](./packages/node/example/README.md)
-
-```ts
-bun add @gutenye/ocr-node
-import Ocr from '@gutenye/ocr-node'
-const ocr = await Ocr.create()
-const result = await ocr.detect('a.jpg')
-```
 
 ### Browser
 
-> [Example](./packages/browser/example/README.md)
+```ts
+bun add @areb0s/ocr-browser
+```
 
 ```ts
-bun add @gutenye/ocr-browser
-import Ocr from '@gutenye/ocr-browser'
+import Ocr from '@areb0s/ocr-browser'
+
 const ocr = await Ocr.create({
   models: {
     detectionPath: '/assets/ch_PP-OCRv4_det_infer.onnx',
@@ -33,31 +31,35 @@ const ocr = await Ocr.create({
     dictionaryPath: '/assets/ppocr_keys_v1.txt'
   }
 })
-const result = await ocr.detect('/a.jpg')
+
+// URL string (original)
+const result = await ocr.detect('/image.jpg')
+
+// ImageBitmap (NEW)
+const bitmap = await createImageBitmap(file)
+const result = await ocr.detect(bitmap)
+
+// HTMLImageElement (NEW)
+const img = document.querySelector('img')
+const result = await ocr.detect(img)
+
+// HTMLCanvasElement (NEW)
+const canvas = document.querySelector('canvas')
+const result = await ocr.detect(canvas)
+
+// HTMLVideoElement - captures current frame (NEW)
+const video = document.querySelector('video')
+const result = await ocr.detect(video)
+
+// Raw pixel data (original)
+const result = await ocr.detect({
+  data: imageData.data,  // Uint8ClampedArray
+  width: 800,
+  height: 600
+})
 ```
 
-### React Native
-
-> [Example](./packages/react-native/example/README.md)
-
-```ts
-bun add @gutenye/ocr-react-native
-import Ocr from '@gutenye/ocr-react-native'
-const ocr = await Ocr.create()
-const result = await ocr.detect('a.jpg')
-```
-
-### C++
-
-> [Example](./packages/react-native/cpp/example/README.md)
-
-```cpp
-#include "native-ocr.h"
-NativeOcr* ocr = new NativeOcr(..)
-auto result = ocr->detect("a.jpg");
-```
-
-### API Reference
+## API Reference
 
 ```ts
 Ocr.create({
@@ -67,45 +69,78 @@ Ocr.create({
     dictionaryPath: string
   },
   isDebug?: boolean
-  debugOutputDir?: string // Node only
-  recognitionImageMaxSize?: number // RN only
-  detectionThreshold?: number // RN only
-  detectionBoxThreshold?: number // RN only
-  detectionUnclipRatiop?: number // RN only
-  detectionUseDilate?: boolean // RN only
-  detectionUsePolygonScore?: boolean // RN only
-  useDirectionClassify?: boolean // RN only
-  onnxOptions?: {}       // Node only. Pass to ONNX Runtime
 }): Promise<Ocr>
 
-ocr.detect(imagePath: string | {data: Uint8Array | Uint8ClampedArray | Buffer, width: number, height: number}, {
-  onnxOptions?: {}     // Node only. Pass to ONNX Runtime
-}): Promise<{texts: TextLine[], resizedImageWidth: number, resizedImageHeight: number}>
+// Browser - Extended input types
+ocr.detect(
+  image: string                 // URL or data URL
+        | ImageBitmap           // from createImageBitmap()
+        | HTMLImageElement      // <img> element
+        | HTMLCanvasElement     // <canvas> element
+        | HTMLVideoElement      // <video> element (current frame)
+        | {                     // Raw pixel data
+            data: Uint8Array | Uint8ClampedArray,
+            width: number,
+            height: number
+          }
+): Promise<{
+  texts: TextLine[],
+  resizedImageWidth: number,
+  resizedImageHeight: number
+}>
 
 TextLine {
   text: string
-  score: number
-  frame: { top, left, width, height }
+  mean: number
+  box?: number[][]
 }
-
 ```
 
-## Development
+## ImageRaw Static Methods
 
-- Requires Git LFS to clone the repo
+For advanced use cases, you can use `ImageRaw` directly:
 
-```sh
-brew install git-lfs 
-git clone git@github.com:gutenye/ocr.git
+```ts
+import { ImageRaw } from '@areb0s/ocr-browser'
+
+// Universal factory method
+const imageRaw = await ImageRaw.from(input)
+
+// Specific converters
+const imageRaw = await ImageRaw.fromImageBitmap(bitmap)
+const imageRaw = await ImageRaw.fromHTMLImageElement(img)
+const imageRaw = await ImageRaw.fromHTMLCanvasElement(canvas)
+const imageRaw = await ImageRaw.fromHTMLVideoElement(video)
+
+// Type guards
+ImageRaw.isImageBitmap(input)
+ImageRaw.isHTMLImageElement(input)
+ImageRaw.isHTMLCanvasElement(input)
+ImageRaw.isHTMLVideoElement(input)
+ImageRaw.isImageRawData(input)
 ```
 
-- [Development](docs/Development.md)
+## Memory Management
 
-## Related Projects
+When using `ImageBitmap`, the library automatically calls `bitmap.close()` after conversion to free GPU/CPU memory. You don't need to manage this manually.
 
-| Name                                                           | Platforms | Note                            |
-| -------------------------------------------------------------- | --------- | ------------------------------- |
-| [eSearch-OCR](https://github.com/xushengfeng/eSearch-OCR)      | Electron  |                                 |
-| [paddleocr-onnx](https://github.com/backrunner/paddleocr-onnx) | Node      | Recogination part is incomplete |
-| [ocrjs](https://github.com/SOVLOOKUP/ocrjs)                    | Node      | Recogination part is incomplete |
-| [Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo) | Mobile, C++ | |
+```ts
+const bitmap = await createImageBitmap(file)
+await ocr.detect(bitmap)  // bitmap is automatically closed after use
+// bitmap is now invalid - don't reuse it
+```
+
+If you need to reuse the bitmap, create a new one for each OCR call.
+
+## Credits
+
+This is a fork of [@gutenye/ocr](https://github.com/gutenye/ocr) by [Guten Ye](https://github.com/gutenye).
+
+Original project features:
+- High accuracy OCR based on PaddleOCR PP-OCRv4 model
+- ONNX Runtime for cross-platform inference
+- Support for Node.js, Browser, React Native, and C++
+
+## License
+
+MIT - See [LICENSE](./LICENSE) for details.
