@@ -1,6 +1,6 @@
 {
   "name": "@areb0s/ocr-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fork of @gutenye/ocr-browser with ImageBitmap support. High accurate OCR library for Browser based on PaddleOCR and ONNX runtime. Accepts ImageBitmap, HTMLImageElement, HTMLCanvasElement, HTMLVideoElement as input.",
   "keywords": [
     "ocr",
