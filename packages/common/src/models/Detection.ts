@@ -1,7 +1,7 @@
 import type { InferenceSession as InferenceSessionCommon, Tensor } from 'onnxruntime-common'
 import invariant from 'tiny-invariant'
 import { ImageRaw, InferenceSession, defaultModels, splitIntoLineImages } from '#common/backend'
-import type { ImageRawData, ImageRaw as ImageRawType, ModelCreateOptions, Size } from '#common/types'
+import type { ImageRawData, BrowserImageInput, ImageRaw as ImageRawType, ModelCreateOptions, Size } from '#common/types'
 import { ModelBase } from './ModelBase'
 
 const BASE_SIZE = 32
@@ -14,8 +14,13 @@ export class Detection extends ModelBase {
     return new Detection({ model, options: restOptions })
   }
 
-  async run(path: string | ImageRawData, { onnxOptions = {} }: { onnxOptions?: InferenceSessionCommon.RunOptions } = {}) {
-    const image = typeof path === "string" ? await ImageRaw.open(path) : new ImageRaw(path)
+  async run(input: string | ImageRawData | BrowserImageInput, { onnxOptions = {} }: { onnxOptions?: InferenceSessionCommon.RunOptions } = {}) {
+    // Use ImageRaw.from() factory method if available (browser), otherwise fallback to legacy handling
+    const image = typeof (ImageRaw as any).from === 'function'
+      ? await (ImageRaw as any).from(input)
+      : typeof input === "string" 
+        ? await ImageRaw.open(input) 
+        : new ImageRaw(input as ImageRawData)
 
     // Resize image to multiple of 32
     //   - image width and height must be a multiple of 32

@@ -18,6 +18,18 @@ export type ImageRawData = {
   height: number
 }
 
+/**
+ * Browser-specific image input types
+ * Supports various browser image sources that can be converted to ImageRawData
+ */
+export type BrowserImageInput =
+  | string // URL or data URL
+  | ImageRawData // Raw pixel data
+  | ImageBitmap // From createImageBitmap(), OffscreenCanvas, etc.
+  | HTMLImageElement // <img> element
+  | HTMLCanvasElement // <canvas> element
+  | HTMLVideoElement // <video> element (captures current frame)
+
 export type ModelData = {
   data: number[] | Uint8Array
   width: number
