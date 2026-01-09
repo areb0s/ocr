@@ -30,8 +30,8 @@
     "!**/__tests__"
   ],
   "scripts": {
-    "prepublishOnly": "cp ../../README.md . && ./ake build",
-    "postpublish": "rm README.md && rm -rf build"
+    "build": "npx tsc --project tsconfig.build.json && npx tsc-alias --project tsconfig.build.json",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@areb0s/ocr-common": "1.0.0",
