@@ -1,6 +1,6 @@
 {
   "name": "@areb0s/ocr-browser",
-  "version": "1.0.4",
+  "version": "1.0.7",
   "description": "Fork of @gutenye/ocr-browser with ImageBitmap support. High accurate OCR library for Browser based on PaddleOCR and ONNX runtime. Accepts ImageBitmap, HTMLImageElement, HTMLCanvasElement, HTMLVideoElement as input.",
   "keywords": [
     "ocr",
@@ -27,14 +27,18 @@
   "files": [
     "src",
     "build",
+    "dist",
     "!**/__tests__"
   ],
+  "unpkg": "dist/ocr-browser.min.js",
+  "jsdelivr": "dist/ocr-browser.min.js",
   "scripts": {
     "build": "npx tsc --project tsconfig.build.json && npx tsc-alias --project tsconfig.build.json",
-    "prepublishOnly": "npm run build"
+    "build:iife": "node scripts/build-iife.mjs",
+    "prepublishOnly": "npm run build && npm run build:iife"
   },
   "dependencies": {
-    "@areb0s/ocr-common": "1.0.3",
+    "@areb0s/ocr-common": "1.0.4",
     "@gutenye/ocr-models": "^1.2.2",
     "onnxruntime-web": "^1.23.2"
   }
